@@ -9,6 +9,10 @@
         {
             "type": "vcs",
             "url": "https://github.com/antijante/product-feeds.git"
+        },
+        {
+            "type": "vcs",
+            "url": "https://github.com/antijante/woocommerce-product-bundles.git"
         }
     ],
     "require-all": true
