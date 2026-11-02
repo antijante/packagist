@@ -1,6 +1,15 @@
 {
     "name": "antijante/packagist",
     "homepage": "https://antijante.github.io/packagist",
-    "repositories": [],
+    "repositories": [
+        {
+            "type": "vcs",
+            "url": "https://github.com/antijante/woo-i18n.git"
+        },
+        {
+            "type": "vcs",
+            "url": "https://github.com/antijante/product-feeds.git"
+        }
+    ],
     "require-all": true
 }
