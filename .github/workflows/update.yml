@@ -1,0 +1,31 @@
+# Reusable workflow for plugin mirror repos: asks this repo to rebuild the index
+# right after a new release is tagged. Optional, since the scheduled build picks
+# up new tags twice a day anyway.
+#
+# The token needs Contents: write on antijante/packagist (required by
+# POST /dispatches). Without it the job warns and exits green.
+name: Trigger index rebuild
+
+on:
+  workflow_call:
+    secrets:
+      token:
+        required: false
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger rebuild
+        env:
+          TOKEN: ${{ secrets.token }}
+        run: |
+          if [ -z "$TOKEN" ]; then
+            echo "::warning::No token passed; the scheduled index build will pick up this release."
+            exit 0
+          fi
+          curl -L --fail-with-body -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer $TOKEN" \
+            -d '{"event_type":"update","client_payload":{"repository":"${{ github.repository }}"}}' \
+            https://api.github.com/repos/antijante/packagist/dispatches

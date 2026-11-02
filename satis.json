@@ -1,0 +1,6 @@
+{
+    "name": "antijante/packagist",
+    "homepage": "https://antijante.github.io/packagist",
+    "repositories": [],
+    "require-all": true
+}

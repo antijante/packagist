@@ -1,0 +1,83 @@
+name: Build index
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  # Sent by plugin mirror repos (via update.yml) right after they tag a release.
+  repository_dispatch:
+  # Safety net: re-reads every mirror's tags even if a dispatch was missed.
+  schedule:
+    - cron: '30 4,16 * * *'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build
+  cancel-in-progress: true
+
+jobs:
+  # GitHub disables scheduled workflows in public repos after 60 days without a
+  # push. Workflow runs do not count, so push an empty commit when main goes quiet.
+  keepalive:
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: Reset inactivity timer if needed
+        run: |
+          set -euo pipefail
+          age=$(( ( $(date +%s) - $(git log -1 --format=%ct) ) / 86400 ))
+          echo "main last changed ${age} days ago"
+          [ "$age" -lt 45 ] && exit 0
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit --allow-empty -m "chore: keepalive (main idle ${age} days)"
+          git push origin HEAD:main
+
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      # MIRROR_READ_TOKEN must be able to read every private mirror listed in
+      # satis.json (fine-grained PAT or GitHub App token, Contents: read).
+      # Falls back to the job token, which is enough while there are no
+      # private mirrors.
+      - name: Build with Satis
+        env:
+          TOKEN: ${{ secrets.MIRROR_READ_TOKEN || github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/composer"
+          printf '{"github-oauth":{"github.com":"%s"}}' "$TOKEN" > "$RUNNER_TEMP/composer/auth.json"
+          docker run --rm --init \
+            --user "$(id -u):$(id -g)" \
+            --volume "$PWD:/build" \
+            --volume "$RUNNER_TEMP/composer:/composer" \
+            composer/satis build /build/satis.json /build/public --no-interaction
+          rm -f "$RUNNER_TEMP/composer/auth.json"
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: public
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
