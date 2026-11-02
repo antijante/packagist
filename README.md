@@ -45,9 +45,9 @@ Then `composer require antijante/<plugin>`.
 
 2. Add `.github/workflows/build.yml` that checks the vendor daily, commits and tags new
    versions, then triggers a rebuild here. The reusable updaters in
-   [`generoi/github-action-update-plugins`](https://github.com/generoi/github-action-update-plugins)
-   cover WooCommerce.com, ACF, Gravity Forms, FacetWP, WPML, EDD, Freemius and others.
-   Pin them to a commit SHA, since that repo is outside our control.
+   [`antijante/github-action-update-plugins`](https://github.com/antijante/github-action-update-plugins)
+   (our copy of Genero's MIT-licensed repo) cover WooCommerce.com, ACF, Gravity Forms,
+   FacetWP, WPML, EDD, Freemius and others.
 
     ```yml
     name: Build
@@ -57,7 +57,7 @@ Then `composer require antijante/<plugin>`.
         - cron: '5 4 * * *'
     jobs:
       build:
-        uses: generoi/github-action-update-plugins/.github/workflows/wccom-update.yml@<sha>
+        uses: antijante/github-action-update-plugins/.github/workflows/wccom-update.yml@main
         secrets:
           ACCESS_TOKEN: ${{ secrets.WCCOM_ACCESS_TOKEN }}
           ACCESS_TOKEN_SECRET: ${{ secrets.WCCOM_ACCESS_TOKEN_SECRET }}
